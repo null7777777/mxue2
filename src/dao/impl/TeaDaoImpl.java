@@ -1,248 +1,134 @@
+/**
+ * 饮品数据访问实现类
+ * Created time: 2024-12-19 03:35:06
+ * @author null7777777
+ */
 package dao.impl;
 
+import dao.TeaDao;
+import model.Tea;
+import utils.C3P0Util;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import model.Tea;
-import model.PageBean;
-import dao.TeaDao;
-import utils.C3P0Util;
-
-/**
- * 商品数据访问实现类
- * Created time: 2024-12-18
- * @author null7777777
- */
 public class TeaDaoImpl implements TeaDao {
-
-    @Override
-    public List<Tea> teaList(PageBean pb) {
-        List<Tea> list = new ArrayList<>();
-        String sql = "SELECT t.*, c.catalogName, i.imgName, i.imgSrc, i.imgType " +
-                    "FROM s_tea t " +
-                    "LEFT JOIN s_catalog c ON t.catalogId = c.catalogId " +
-                    "LEFT JOIN s_uploadimg i ON t.imgId = i.imgId " +
-                    "ORDER BY t.addTime DESC LIMIT ?,?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql,
-            (pb.getCurPage() - 1) * pb.getMaxSize(),
-            pb.getMaxSize()
-        );
-        
-        if (lm.size() > 0) {
-            for (Map<String, Object> map : lm) {
-                Tea tea = new Tea(map);
-                list.add(tea);
-            }
-        }
-        return list;
-    }
     
+    /**
+     * 查找推荐饮品列表
+     * @param limit 限制返回数量
+     * @return 返回指定数量的饮品列表，按添加时间降序排序
+     */
     @Override
-    public List<Tea> searchTea(String keyword, PageBean pb) {
+    public List<Tea> findRecommendTea(int limit) {
+        String sql = "SELECT * FROM view_tea ORDER BY addTime DESC LIMIT ?";
+        List<Map<String, Object>> mapList = C3P0Util.executeQuery(sql, limit);
         List<Tea> list = new ArrayList<>();
-        String sql = "SELECT t.*, c.catalogName, i.imgName, i.imgSrc, i.imgType " +
-                    "FROM s_tea t " +
-                    "LEFT JOIN s_catalog c ON t.catalogId = c.catalogId " +
-                    "LEFT JOIN s_uploadimg i ON t.imgId = i.imgId " +
-                    "WHERE t.teaName LIKE ? OR t.description LIKE ? " +
-                    "ORDER BY t.addTime DESC LIMIT ?,?";
-        
-        String pattern = "%" + keyword + "%";
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql,
-            pattern, pattern,
-            (pb.getCurPage() - 1) * pb.getMaxSize(),
-            pb.getMaxSize()
-        );
-        
-        if (lm.size() > 0) {
-            for (Map<String, Object> map : lm) {
-                Tea tea = new Tea(map);
-                list.add(tea);
+        if (mapList != null) {
+            for (Map<String, Object> map : mapList) {
+                if (map != null) {
+                    list.add(new Tea(map));
+                }
             }
         }
         return list;
     }
 
+    /**
+     * 根据分类ID查找饮品列表
+     * @param catalogId 分类ID
+     * @return 该分类下的所有饮品列表
+     */
     @Override
-    public long teaReadCount() {
-        long count = 0;
-        String sql = "SELECT COUNT(*) as count FROM s_tea";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql);
-        
-        if (lm.size() > 0) {
-            count = ((Number) lm.get(0).get("count")).longValue();
+    public List<Tea> findTeaByCatalogId(int catalogId) {
+        String sql = "SELECT * FROM view_tea WHERE catalogId = ?";
+        List<Map<String, Object>> mapList = C3P0Util.executeQuery(sql, catalogId);
+        List<Tea> list = new ArrayList<>();
+        if (mapList != null) {
+            for (Map<String, Object> map : mapList) {
+                if (map != null) {
+                    list.add(new Tea(map));
+                }
+            }
         }
-        return count;
+        return list;
     }
-    
+
+    /**
+     * 获取所有饮品列表
+     * @return 所有饮品列表，按ID升序排序
+     */
     @Override
-    public long teaSearchCount(String keyword) {
-        long count = 0;
-        String sql = "SELECT COUNT(*) as count FROM s_tea " +
-                    "WHERE teaName LIKE ? OR description LIKE ?";
-        
-        String pattern = "%" + keyword + "%";
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql, pattern, pattern);
-        
-        if (lm.size() > 0) {
-            count = ((Number) lm.get(0).get("count")).longValue();
+    public List<Tea> teaList() {
+        String sql = "SELECT * FROM view_tea ORDER BY teaId ASC";
+        List<Map<String, Object>> mapList = C3P0Util.executeQuery(sql);
+        List<Tea> list = new ArrayList<>();
+        if (mapList != null) {
+            for (Map<String, Object> map : mapList) {
+                if (map != null) {
+                    list.add(new Tea(map));
+                }
+            }
         }
-        return count;
+        return list;
     }
 
+    /**
+     * 根据ID查找饮品
+     * @param teaId 饮品ID
+     * @return 找到返回饮品对象，否则返回null
+     */
     @Override
-    public boolean teaAdd(Tea tea) {
-        String sql = "INSERT INTO s_tea(teaName,price,description,catalogId,imgId,addTime,recommend) " +
-                    "VALUES(?,?,?,?,?,?,?)";
-        
-        int result = C3P0Util.executeUpdate(sql,
-            tea.getTeaName(),
-            tea.getPrice(),
-            tea.getDescription(),
-            tea.getCatalogId(),
-            tea.getImgId(),
-            new Date(),
-            tea.isRecommend()
-        );
-        
-        return result > 0;
+    public Tea findTeaById(int teaId) {
+        String sql = "SELECT * FROM view_tea WHERE teaId = ?";
+        List<Map<String, Object>> mapList = C3P0Util.executeQuery(sql, teaId);
+        if (mapList != null && !mapList.isEmpty() && mapList.get(0) != null) {
+            return new Tea(mapList.get(0));
+        }
+        return null;
     }
 
+    /**
+     * 添加新饮品
+     * @param tea 要添加的饮品对象
+     * @return 添加成功返回true，失败返回false
+     */
     @Override
-    public boolean teaUpdate(Tea tea) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("UPDATE s_tea SET teaName=?,price=?,description=?,catalogId=?,recommend=? ");
-        sql.append("WHERE teaId=?");
-        
-        int result = C3P0Util.executeUpdate(sql.toString(),
-            tea.getTeaName(),
-            tea.getPrice(),
-            tea.getDescription(),
-            tea.getCatalogId(),
-            tea.isRecommend(),
-            tea.getTeaId()
-        );
-        
-        return result > 0;
+    public boolean addTea(Tea tea) {
+        String sql = "INSERT INTO s_tea (catalogId, teaName, price, description, imgId, addTime) VALUES (?, ?, ?, ?, ?, NOW())";
+        return C3P0Util.executeUpdate(sql, 
+            tea.getCatalogId(), 
+            tea.getTeaName(), 
+            tea.getPrice(), 
+            tea.getDescription(), 
+            tea.getImgId()) > 0;
     }
 
+    /**
+     * 更新饮品信息
+     * @param tea 要更新的饮品对象
+     * @return 更新成功返回true，失败返回false
+     */
     @Override
-    public boolean teaDel(int id) {
+    public boolean updateTea(Tea tea) {
+        String sql = "UPDATE s_tea SET catalogId=?, teaName=?, price=?, description=?, imgId=? WHERE teaId=?";
+        return C3P0Util.executeUpdate(sql, 
+            tea.getCatalogId(), 
+            tea.getTeaName(), 
+            tea.getPrice(), 
+            tea.getDescription(), 
+            tea.getImgId(), 
+            tea.getTeaId()) > 0;
+    }
+
+    /**
+     * 删除饮品
+     * @param teaId 要删除的饮品ID
+     * @return 删除成功返回true，失败返回false
+     */
+    @Override
+    public boolean deleteTea(int teaId) {
         String sql = "DELETE FROM s_tea WHERE teaId=?";
-        int result = C3P0Util.executeUpdate(sql, id);
-        return result > 0;
-    }
-
-    @Override
-    public Tea findTeaById(int id) {
-        Tea tea = null;
-        String sql = "SELECT t.*, c.catalogName, i.imgName, i.imgSrc, i.imgType " +
-                    "FROM s_tea t " +
-                    "LEFT JOIN s_catalog c ON t.catalogId = c.catalogId " +
-                    "LEFT JOIN s_uploadimg i ON t.imgId = i.imgId " +
-                    "WHERE t.teaId=?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql, id);
-        
-        if (lm.size() > 0) {
-            tea = new Tea(lm.get(0));
-        }
-        return tea;
-    }
-
-    @Override
-    public boolean findTeaByName(String teaName) {
-        String sql = "SELECT COUNT(*) as count FROM s_tea WHERE teaName=?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql, teaName);
-        
-        if (lm.size() > 0) {
-            int count = ((Number) lm.get(0).get("count")).intValue();
-            return count > 0;
-        }
-        return false;
-    }
-
-    @Override
-    public String findimgIdByIds(String ids) {
-        StringBuilder imgIds = new StringBuilder();
-        String sql = "SELECT imgId FROM s_tea WHERE teaId IN (" + ids + ")";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql);
-        
-        if (lm.size() > 0) {
-            for (Map<String, Object> map : lm) {
-                imgIds.append(map.get("imgId")).append(",");
-            }
-            if (imgIds.length() > 0) {
-                imgIds.deleteCharAt(imgIds.length() - 1);
-            }
-        }
-        return imgIds.toString();
-    }
-    
-    @Override
-    public long teaCountByCatalogId(int catalogId) {
-        long count = 0;
-        String sql = "SELECT COUNT(*) as count FROM s_tea WHERE catalogId = ?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql, catalogId);
-        
-        if (lm.size() > 0) {
-            count = ((Number) lm.get(0).get("count")).longValue();
-        }
-        return count;
-    }
-    @Override
-    public List<Tea> findRecommendTea(PageBean pb) {
-        List<Tea> list = new ArrayList<>();
-        String sql = "SELECT t.*, c.catalogName, i.imgName, i.imgSrc, i.imgType " +
-                    "FROM s_tea t " +
-                    "LEFT JOIN s_catalog c ON t.catalogId = c.catalogId " +
-                    "LEFT JOIN s_uploadimg i ON t.imgId = i.imgId " +
-                    "WHERE t.recommend = true " +
-                    "ORDER BY t.addTime DESC LIMIT ?,?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql,
-            (pb.getCurPage() - 1) * pb.getMaxSize(),
-            pb.getMaxSize()
-        );
-        
-        if (lm.size() > 0) {
-            for (Map<String, Object> map : lm) {
-                Tea tea = new Tea(map);
-                list.add(tea);
-            }
-        }
-        return list;
-    }
-    
-    @Override
-    public List<Tea> findTeaByCatalogId(int catalogId, PageBean pb) {
-        List<Tea> list = new ArrayList<>();
-        String sql = "SELECT t.*, c.catalogName, i.imgName, i.imgSrc, i.imgType " +
-                    "FROM s_tea t " +
-                    "LEFT JOIN s_catalog c ON t.catalogId = c.catalogId " +
-                    "LEFT JOIN s_uploadimg i ON t.imgId = i.imgId " +
-                    "WHERE t.catalogId = ? " +
-                    "ORDER BY t.addTime DESC LIMIT ?,?";
-        
-        List<Map<String, Object>> lm = C3P0Util.executeQuery(sql,
-            catalogId,
-            (pb.getCurPage() - 1) * pb.getMaxSize(),
-            pb.getMaxSize()
-        );
-        
-        if (lm.size() > 0) {
-            for (Map<String, Object> map : lm) {
-                Tea tea = new Tea(map);
-                list.add(tea);
-            }
-        }
-        return list;
+        return C3P0Util.executeUpdate(sql, teaId) > 0;
     }
 }

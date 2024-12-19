@@ -4,122 +4,150 @@ import java.util.Date;
 import java.util.Map;
 
 public class Tea {
+    private Integer teaId;        // 饮品ID
+    private Integer catalogId;    // 分类ID
+    private String teaName;       // 饮品名称
+    private Double price;         // 价格
+    private String description;   // 描述
+    private Integer imgId;        // 图片ID
+    private Date addTime;         // 添加时间
+    
+    // 关联字段
+    private String catalogName;   // 分类名称
+    private String imgName;       // 图片名称
+    private String imgSrc;        // 图片路径
+    private String imgType;       // 图片类型
 
-	private int teaId; // 商品编号
-	private String teaName; //  商品名称
-	private double price; // 价格
-	private String description; // 描述信息
-	private int catalogId; //商品分类id
-	private int imgId; // 图片id
-	private Date addTime;//上架时间
-	private boolean recommend;
+    public Tea() {}
 
-	private Catalog catalog = new Catalog();
-	private UpLoadImg upLoadImg = new UpLoadImg();
+    public Tea(Map<String, Object> map) {
+        // 基本字段，使用安全的类型转换
+        if (map.get("teaId") != null) {
+            this.teaId = ((Number) map.get("teaId")).intValue();
+        }
+        if (map.get("catalogId") != null) {
+            this.catalogId = ((Number) map.get("catalogId")).intValue();
+        }
+        this.teaName = (String) map.get("teaName");
+        if (map.get("price") != null) {
+            this.price = ((Number) map.get("price")).doubleValue();
+        }
+        this.description = (String) map.get("description");
+        if (map.get("imgId") != null) {
+            this.imgId = ((Number) map.get("imgId")).intValue();
+        }
+        this.addTime = (Date) map.get("addTime");
+        
+        // 关联字段
+        this.catalogName = (String) map.get("catalogName");
+        this.imgName = (String) map.get("imgName");
+        this.imgSrc = (String) map.get("imgSrc");
+        this.imgType = (String) map.get("imgType");
+    }
 
-	public Tea() {
-	}
+    // Getters and Setters
+    public Integer getTeaId() {
+        return teaId;
+    }
 
+    public void setTeaId(Integer teaId) {
+        this.teaId = teaId;
+    }
 
-	public Tea(Map<String, Object> map) {
-		this.teaId = (int) map.get("teaId");
-		this.teaName = (String) map.get("teaName");
-		this.price = (double) map.get("price");
-		this.description = (String) map.get("description");
-		this.addTime=(Date) map.get("addTime");
-		this.catalog = new Catalog(map);
-		this.upLoadImg = new UpLoadImg(map);
-		this.recommend = (boolean) map.get("recommend");
-	}
+    public Integer getCatalogId() {
+        return catalogId;
+    }
 
-	public int getTeaId() {
-		return teaId;
-	}
+    public void setCatalogId(Integer catalogId) {
+        this.catalogId = catalogId;
+    }
 
-	public void setTeaId(int teaId) {
-		this.teaId = teaId;
-	}
+    public String getTeaName() {
+        return teaName;
+    }
 
-	public String getTeaName() {
-		return teaName;
-	}
+    public void setTeaName(String teaName) {
+        this.teaName = teaName;
+    }
 
-	public void setTeaName(String teaName) {
-		this.teaName = teaName;
-	}
+    public Double getPrice() {
+        return price;
+    }
 
-	public double getPrice() {
-		return price;
-	}
+    public void setPrice(Double price) {
+        this.price = price;
+    }
 
-	public void setPrice(double price) {
-		this.price = price;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public Integer getImgId() {
+        return imgId;
+    }
 
-	public int getCatalogId() {
-		return catalogId;
-	}
+    public void setImgId(Integer imgId) {
+        this.imgId = imgId;
+    }
 
-	public void setCatalogId(int catalogId) {
-		this.catalogId = catalogId;
-	}
+    public Date getAddTime() {
+        return addTime;
+    }
 
-	public int getImgId() {
-		return imgId;
-	}
+    public void setAddTime(Date addTime) {
+        this.addTime = addTime;
+    }
 
-	public void setImgId(int imgId) {
-		this.imgId = imgId;
-	}
+    public String getCatalogName() {
+        return catalogName;
+    }
 
-	public Date getAddTime() {
-		return addTime;
-	}
+    public void setCatalogName(String catalogName) {
+        this.catalogName = catalogName;
+    }
 
-	public void setAddTime(Date addTime) {
-		this.addTime = addTime;
-	}
+    public String getImgName() {
+        return imgName;
+    }
 
-	public Catalog getCatalog() {
-		return catalog;
-	}
+    public void setImgName(String imgName) {
+        this.imgName = imgName;
+    }
 
-	public void setCatalog(Catalog catalog) {
-		this.catalog = catalog;
-	}
+    public String getImgSrc() {
+        return imgSrc;
+    }
 
-	public UpLoadImg getUpLoadImg() {
-		return upLoadImg;
-	}
+    public void setImgSrc(String imgSrc) {
+        this.imgSrc = imgSrc;
+    }
 
-	public void setUpLoadImg(UpLoadImg upLoadImg) {
-		this.upLoadImg = upLoadImg;
-	}
-	
-	
+    public String getImgType() {
+        return imgType;
+    }
 
-	public boolean isRecommend() {
-		return recommend;
-	}
+    public void setImgType(String imgType) {
+        this.imgType = imgType;
+    }
 
-
-	public void setRecommend(boolean recommend) {
-		this.recommend = recommend;
-	}
-
-
-	@Override
-	public String toString() {
-		return "Tea [teaId=" + teaId + ", teaName=" + teaName + ", price=" + price + ", description=" + description
-				+ ", catalogId=" + catalogId + ", imgId=" + imgId + ", addTime=" + addTime + ", recommend=" + recommend
-				+ ", catalog=" + catalog + ", upLoadImg=" + upLoadImg + "]";
-	}
+    @Override
+    public String toString() {
+        return "Tea{" +
+                "teaId=" + teaId +
+                ", catalogId=" + catalogId +
+                ", teaName='" + teaName + '\'' +
+                ", price=" + price +
+                ", description='" + description + '\'' +
+                ", imgId=" + imgId +
+                ", addTime=" + addTime +
+                ", catalogName='" + catalogName + '\'' +
+                ", imgName='" + imgName + '\'' +
+                ", imgSrc='" + imgSrc + '\'' +
+                ", imgType='" + imgType + '\'' +
+                '}';
+    }
 }
