@@ -2,6 +2,7 @@ package servlet.tea;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,7 +21,7 @@ import dao.impl.TeaDaoImpl;
  * 
  * Created time: 2024-12-18
  * @author null7777777
- * Last modified: 2024-12-18 17:02:52 UTC
+ * Last modified: 2024-12-19 05:10:50 UTC
  */
 @WebServlet("/TeaList2")
 public class TeaList2 extends HttpServlet {
@@ -56,6 +57,9 @@ public class TeaList2 extends HttpServlet {
         TeaDao teaDao = new TeaDaoImpl();
         
         try {
+            // 获取所有商品列表
+            List<Tea> allTeaList = teaDao.teaList();
+            
             // 处理分页参数
             int curPage = 1;
             String pageStr = request.getParameter("page");
@@ -63,40 +67,36 @@ public class TeaList2 extends HttpServlet {
                 curPage = Integer.parseInt(pageStr);
             }
             
-            // 创建分页对象和获取商品列表
-            List<Tea> teaList;
-            PageBean pb;
-            
-            if (searchName == null || searchName.trim().isEmpty()) {
-                // 获取所有商品的总数
-                long totalCount = teaDao.teaReadCount();
-                
-                // 创建分页对象
-                pb = new PageBean(curPage, MAX_LIST_SIZE, totalCount);
-                
-                // 获取所有商品列表
-                teaList = teaDao.teaList(pb);
-                
-                request.setAttribute("title", "所有商品");
-                
-            } else {
-                // 使用搜索功能获取商品列表
-                pb = new PageBean(curPage, MAX_LIST_SIZE, 0); // 先创建分页对象
-                
-                // 使用搜索方法获取商品列表
-                teaList = teaDao.searchTea(searchName, pb);
-                
-                // 更新总记录数
-                pb.setReadCount(teaList.size());
-                pb.updatePage();
-                
+            // 根据搜索条件筛选商品
+            List<Tea> filteredList;
+            if (searchName != null && !searchName.trim().isEmpty()) {
+                filteredList = allTeaList.stream()
+                    .filter(tea -> tea.getTeaName().toLowerCase().contains(searchName.toLowerCase().trim()))
+                    .collect(Collectors.toList());
                 request.setAttribute("title", "搜索结果：" + searchName);
                 request.setAttribute("searchName", searchName);
+            } else {
+                filteredList = allTeaList;
+                request.setAttribute("title", "所有商品");
             }
-
+            
+            // 创建分页对象
+            long totalCount = filteredList.size();
+            PageBean pb = new PageBean(curPage, MAX_LIST_SIZE, totalCount);
+            
+            // 手动进行分页处理
+            int startIndex = (pb.getCurPage() - 1) * MAX_LIST_SIZE;
+            int endIndex = Math.min(startIndex + MAX_LIST_SIZE, filteredList.size());
+            
+            // 获取当前页的数据
+            List<Tea> pageTeaList = filteredList.subList(
+                startIndex, 
+                endIndex
+            );
+            
             // 设置请求属性
             request.setAttribute("pageBean", pb);
-            request.setAttribute("teaList", teaList);
+            request.setAttribute("teaList", pageTeaList);
             
             // 转发到列表页面
             request.getRequestDispatcher(TEALIST_PATH).forward(request, response);

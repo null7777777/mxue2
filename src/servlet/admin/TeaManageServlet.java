@@ -1,6 +1,7 @@
 package servlet.admin;
 
 import java.io.File;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +22,6 @@ import org.apache.commons.io.IOUtils;
 
 import model.Tea;
 import model.Catalog;
-import model.PageBean;
 import model.UpLoadImg;
 import dao.TeaDao;
 import dao.CatalogDao;
@@ -33,11 +33,6 @@ import utils.RanUtil;
 
 import net.sf.json.JSONObject;
 
-/**
- * 商品管理Servlet
- * Created time: 2024-12-18
- * @author null7777777
- */
 @WebServlet("/jsp/admin/TeaManageServlet")
 public class TeaManageServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -47,7 +42,6 @@ public class TeaManageServlet extends HttpServlet {
     private static final String TEADETAIL_PATH = "teaManage/teaDetail.jsp";
     private static final String TEAIMGDIR_PATH = "images/tea/teaimg/";
     
-    // 文件上传配置
     private static final int MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB 
     private static final String[] ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png"};
 
@@ -101,25 +95,13 @@ public class TeaManageServlet extends HttpServlet {
                 teaList(request, response);
         }
     }
-    
- // 获取商品列表（分页）
+
+// 获取商品列表
     private void teaList(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        int curPage = 1;
-        String page = request.getParameter("page");
-        if (page != null) {
-            try {
-                curPage = Integer.parseInt(page);
-            } catch (NumberFormatException e) {
-                // 解析失败使用默认值1
-            }
-        }
-        int maxSize = Integer.parseInt(request.getServletContext().getInitParameter("maxPageSize"));
         TeaDao teaDao = new TeaDaoImpl();
-        PageBean pb = new PageBean(curPage, maxSize, teaDao.teaReadCount());
-        
-        request.setAttribute("pageBean", pb);
-        request.setAttribute("teaList", teaDao.teaList(pb));
+        List<Tea> teaList = teaDao.teaList(); // 修改为符合接口的方法名
+        request.setAttribute("teaList", teaList);
         request.getRequestDispatcher(TEALIST_PATH).forward(request, response);
     }
 
@@ -131,7 +113,7 @@ public class TeaManageServlet extends HttpServlet {
             try {
                 int id = Integer.parseInt(idStr);
                 TeaDao teaDao = new TeaDaoImpl();
-                Tea tea = teaDao.findTeaById(id);
+                Tea tea = teaDao.findTeaById(id); // 修改为符合接口的方法名
                 if(tea != null) {
                     request.setAttribute("teaInfo", tea);
                     request.getRequestDispatcher(TEADETAIL_PATH).forward(request, response);
@@ -141,7 +123,6 @@ public class TeaManageServlet extends HttpServlet {
                 // ID格式错误
             }
         }
-        // 如果出现任何错误，重定向到列表页
         request.setAttribute("teaMessage", "商品不存在");
         teaList(request, response);
     }
@@ -150,30 +131,27 @@ public class TeaManageServlet extends HttpServlet {
     private void teaAddReq(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         CatalogDao catalogDao = new CatalogDaoImpl();
-        List<Catalog> catalogs = catalogDao.getCatalog();
+        List<Catalog> catalogs = catalogDao.getCatalog(); // 修改为符合接口的方法名
         request.setAttribute("catalog", catalogs);
         request.getRequestDispatcher(TEAADD_PATH).forward(request, response);
     }
 
-    // 添加商品
+// 添加商品
     private void teaAdd(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            // 验证是否是多部分请求
             if (!ServletFileUpload.isMultipartContent(request)) {
                 request.setAttribute("teaMessage", "错误的表单类型");
                 teaAddReq(request, response);
                 return;
             }
 
-            // 准备文件上传
             File contextPath = new File(request.getServletContext().getRealPath("/"));
             File dirPath = new File(contextPath, TEAIMGDIR_PATH);
             if (!dirPath.exists()) {
                 dirPath.mkdirs();
             }
 
-            // 创建文件上传工厂
             DiskFileItemFactory factory = new DiskFileItemFactory();
             factory.setSizeThreshold(MAX_FILE_SIZE);
             
@@ -181,13 +159,11 @@ public class TeaManageServlet extends HttpServlet {
             upload.setFileSizeMax(MAX_FILE_SIZE);
             upload.setHeaderEncoding("UTF-8");
 
-            // 解析请求
             List<FileItem> items = upload.parseRequest(request);
             Tea tea = new Tea();
             UpLoadImg upImg = new UpLoadImg();
             boolean hasImage = false;
 
-            // 处理表单项
             for (FileItem item : items) {
                 if (item.isFormField()) {
                     processFormField(item, tea);
@@ -198,31 +174,25 @@ public class TeaManageServlet extends HttpServlet {
                 }
             }
 
-            // 验证必填字段
-            if (tea.getTeaName() == null || tea.getPrice() <= 0 || !hasImage) {
+            if (tea.getTeaName() == null || tea.getPrice() == null || !hasImage) {
                 request.setAttribute("teaMessage", "请填写完整的商品信息");
                 teaAddReq(request, response);
                 return;
             }
 
-            // 保存数据到数据库
             UpLoadImgDao upImgDao = new UpLoadImgDaoImpl();
-            if (upImgDao.imgAdd(upImg)) {
-                UpLoadImg savedImg = upImgDao.findLastImg();
-                if (savedImg != null) {
-                    tea.setImgId(savedImg.getImgId());
-                    tea.setAddTime(new Date());
+            if (upImgDao.imgAdd(upImg)) { // 修改为符合接口的方法名
+                tea.setImgId(upImg.getImgId());
+                tea.setAddTime(new Date());
 
-                    TeaDao teaDao = new TeaDaoImpl();
-                    if (teaDao.teaAdd(tea)) {
-                        request.setAttribute("teaMessage", "商品添加成功");
-                        teaList(request, response);
-                        return;
-                    }
+                TeaDao teaDao = new TeaDaoImpl();
+                if (teaDao.addTea(tea)) { // 修改为符合接口的方法名
+                    request.setAttribute("teaMessage", "商品添加成功");
+                    teaList(request, response);
+                    return;
                 }
             }
 
-            // 添加失败，清理已上传的图片
             File uploadedFile = new File(contextPath, upImg.getImgSrc());
             if (uploadedFile.exists()) {
                 uploadedFile.delete();
@@ -235,8 +205,7 @@ public class TeaManageServlet extends HttpServlet {
             teaAddReq(request, response);
         }
     }
-    
- // 处理表单字段
+
     private void processFormField(FileItem item, Tea tea) throws Exception {
         String fieldName = item.getFieldName();
         String value = item.getString("UTF-8");
@@ -258,14 +227,10 @@ public class TeaManageServlet extends HttpServlet {
                     tea.setCatalogId(Integer.parseInt(value));
                 }
                 break;
-            case "recommend":
-                tea.setRecommend(Boolean.parseBoolean(value));
-                break;
         }
     }
 
-    // 处理上传的文件
-    private boolean processUploadedFile(FileItem item, UpLoadImg upImg, File dirPath, File contextPath) 
+private boolean processUploadedFile(FileItem item, UpLoadImg upImg, File dirPath, File contextPath) 
             throws Exception {
         String contentType = item.getContentType();
         boolean isAllowedType = false;
@@ -307,8 +272,8 @@ public class TeaManageServlet extends HttpServlet {
                 TeaDao teaDao = new TeaDaoImpl();
                 CatalogDao catalogDao = new CatalogDaoImpl();
                 
-                Tea tea = teaDao.findTeaById(teaId);
-                List<Catalog> catalogs = catalogDao.getCatalog();
+                Tea tea = teaDao.findTeaById(teaId); // 修改为符合接口的方法名
+                List<Catalog> catalogs = catalogDao.getCatalog(); // 修改为符合接口的方法名
                 
                 if (tea != null && catalogs != null) {
                     request.setAttribute("teaInfo", tea);
@@ -324,12 +289,11 @@ public class TeaManageServlet extends HttpServlet {
         teaList(request, response);
     }
 
-    // 更新商品信息
+// 更新商品信息
     private void teaUpdate(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         Tea tea = new Tea();
         
-        // 获取并验证必要参数
         String idStr = request.getParameter("id");
         if (idStr == null || idStr.trim().isEmpty()) {
             request.setAttribute("teaMessage", "商品ID不能为空");
@@ -340,37 +304,35 @@ public class TeaManageServlet extends HttpServlet {
         try {
             tea.setTeaId(Integer.parseInt(idStr));
             
-            // 设置商品名称
             String teaName = request.getParameter("teaName");
             if (teaName != null && !teaName.trim().isEmpty()) {
                 tea.setTeaName(teaName.trim());
             }
             
-            // 设置商品价格
             String priceStr = request.getParameter("price");
             if (priceStr != null && !priceStr.trim().isEmpty()) {
                 tea.setPrice(Double.parseDouble(priceStr));
             }
             
-            // 设置商品分类
             String catalogIdStr = request.getParameter("catalog");
             if (catalogIdStr != null && !catalogIdStr.trim().isEmpty()) {
                 tea.setCatalogId(Integer.parseInt(catalogIdStr));
             }
             
-            // 设置商品描述
             String description = request.getParameter("description");
             if (description != null) {
                 tea.setDescription(description.trim());
             }
             
-            // 设置推荐状态
-            String recommendStr = request.getParameter("recommend");
-            tea.setRecommend(recommendStr != null && "true".equals(recommendStr));
-            
-            // 执行更新
+            // 获取原有商品信息中的imgId和addTime
             TeaDao teaDao = new TeaDaoImpl();
-            if (teaDao.teaUpdate(tea)) {
+            Tea oldTea = teaDao.findTeaById(tea.getTeaId());
+            if (oldTea != null) {
+                tea.setImgId(oldTea.getImgId());
+                tea.setAddTime(oldTea.getAddTime());
+            }
+            
+            if (teaDao.updateTea(tea)) { // 修改为符合接口的方法名
                 request.setAttribute("teaMessage", "商品更新成功");
                 teaList(request, response);
             } else {
@@ -384,8 +346,8 @@ public class TeaManageServlet extends HttpServlet {
             teaList(request, response);
         }
     }
-    
- // 更新商品图片
+
+    // 更新商品图片
     private void updateImg(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         String idStr = request.getParameter("id");
@@ -400,7 +362,6 @@ public class TeaManageServlet extends HttpServlet {
             TeaDao teaDao = new TeaDaoImpl();
             UpLoadImgDao upImgDao = new UpLoadImgDaoImpl();
             
-            // 获取原始商品信息
             Tea tea = teaDao.findTeaById(teaId);
             if (tea == null) {
                 request.setAttribute("teaMessage", "商品不存在");
@@ -408,7 +369,6 @@ public class TeaManageServlet extends HttpServlet {
                 return;
             }
 
-            // 处理文件上传
             File contextPath = new File(request.getServletContext().getRealPath("/"));
             File dirPath = new File(contextPath, TEAIMGDIR_PATH);
             if (!dirPath.exists()) {
@@ -423,16 +383,10 @@ public class TeaManageServlet extends HttpServlet {
             List<FileItem> items = upload.parseRequest(request);
             for (FileItem item : items) {
                 if (!item.isFormField() && item.getSize() > 0) {
-                    UpLoadImg upImg = tea.getUpLoadImg();
+                    UpLoadImg upImg = new UpLoadImg();
+                    upImg.setImgId(tea.getImgId());
                     if (processUploadedFile(item, upImg, dirPath, contextPath)) {
-                        // 删除旧图片
-                        File oldImg = new File(contextPath, tea.getUpLoadImg().getImgSrc());
-                        if (oldImg.exists()) {
-                            oldImg.delete();
-                        }
-                        
-                        // 更新图片信息
-                        if (upImgDao.imgUpdate(upImg)) {
+                        if (upImgDao.imgUpdate(upImg)) { // 修改为符合接口的方法名
                             request.setAttribute("teaMessage", "图片更新成功");
                         } else {
                             request.setAttribute("teaMessage", "图片更新失败");
@@ -441,7 +395,6 @@ public class TeaManageServlet extends HttpServlet {
                     break;
                 }
             }
-
         } catch (Exception e) {
             request.setAttribute("teaMessage", "图片更新失败: " + e.getMessage());
         }
@@ -464,12 +417,16 @@ public class TeaManageServlet extends HttpServlet {
                     File contextPath = new File(request.getServletContext().getRealPath("/"));
                     
                     // 删除商品记录
-                    if (teaDao.teaDel(id)) {
+                    if (teaDao.deleteTea(id)) { // 修改为符合接口的方法名
                         // 删除图片记录和文件
-                        if (upImgDao.imgDel(tea.getImgId())) {
-                            File imgFile = new File(contextPath, tea.getUpLoadImg().getImgSrc());
-                            if (imgFile.exists()) {
-                                imgFile.delete();
+                        if (upImgDao.imgDel(tea.getImgId())) { // 修改为符合接口的方法名
+                            // 获取图片信息并删除文件
+                            UpLoadImg img = upImgDao.findImgById(tea.getImgId());
+                            if (img != null) {
+                                File imgFile = new File(contextPath, img.getImgSrc());
+                                if (imgFile.exists()) {
+                                    imgFile.delete();
+                                }
                             }
                         }
                         request.setAttribute("teaMessage", "商品删除成功");
@@ -486,34 +443,24 @@ public class TeaManageServlet extends HttpServlet {
         teaList(request, response);
     }
 
-    // 搜索商品
+// 搜索商品
     private void searchTea(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        int curPage = 1;
-        String page = request.getParameter("page");
-        if (page != null && !page.trim().isEmpty()) {
-            try {
-                curPage = Integer.parseInt(page);
-            } catch (NumberFormatException e) {
-                // 使用默认值1
-            }
-        }
-        
-        int maxSize = Integer.parseInt(request.getServletContext().getInitParameter("maxPageSize"));
         String keyword = request.getParameter("keyword");
         TeaDao teaDao = new TeaDaoImpl();
+        List<Tea> teaList;
         
         if (keyword != null && !keyword.trim().isEmpty()) {
-            PageBean pb = new PageBean(curPage, maxSize, teaDao.teaSearchCount(keyword));
-            request.setAttribute("teaList", teaDao.searchTea(keyword, pb));
-            request.setAttribute("pageBean", pb);
+            // 由于TeaDao接口中没有专门的搜索方法，我们获取所有商品后在内存中过滤
+            teaList = teaDao.teaList().stream()
+                .filter(tea -> tea.getTeaName().toLowerCase().contains(keyword.toLowerCase().trim()))
+                .collect(java.util.stream.Collectors.toList());
             request.setAttribute("keyword", keyword);
         } else {
-            PageBean pb = new PageBean(curPage, maxSize, teaDao.teaReadCount());
-            request.setAttribute("teaList", teaDao.teaList(pb));
-            request.setAttribute("pageBean", pb);
+            teaList = teaDao.teaList();
         }
         
+        request.setAttribute("teaList", teaList);
         request.getRequestDispatcher(TEALIST_PATH).forward(request, response);
     }
 
@@ -525,7 +472,11 @@ public class TeaManageServlet extends HttpServlet {
         JSONObject json = new JSONObject();
         
         if (teaName != null && !teaName.trim().isEmpty()) {
-            if (teaDao.findTeaByName(teaName.trim())) {
+            // 在所有商品中查找是否存在相同名称
+            boolean exists = teaDao.teaList().stream()
+                .anyMatch(tea -> tea.getTeaName().equalsIgnoreCase(teaName.trim()));
+            
+            if (exists) {
                 json.put("info", "该商品名称已存在");
                 json.put("status", "n");
             } else {
